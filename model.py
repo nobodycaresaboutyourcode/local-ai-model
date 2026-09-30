@@ -235,7 +235,7 @@ def print_parameter_breakdown(model):
 
 
 if __name__ == "__main__":
-    torch.manual_seed(1337)
+    torch.manual_seed(1336)
     device = "mps" if torch.backends.mps.is_available() else "cpu"
 
     # 1. the vocabulary comes straight from the GPT-2 BPE tokenizer
