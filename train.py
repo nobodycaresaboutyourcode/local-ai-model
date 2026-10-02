@@ -3,20 +3,23 @@
 # trains the multi-head attention GPT from model.py on the enron corpus using GPT-2's
 # byte pair encoding (BPE) instead of one token per character.
 #
-# the corpus is ~1.3GB of text (~460 million BPE tokens), which is far too much to re-encode
-# every run. the first run encodes it once and caches the token ids to disk; later runs
-# memory-map that cache so batches are pulled straight from the file without loading it all.
+# only the message bodies are used - the CSV's headers, folder paths and addresses are dropped, so the
+# model learns the language of the emails themselves (which is what the spam classifier will read).
+# encoding ~250k unique bodies is too slow to repeat every run, so the first run encodes them once and
+# caches the token ids to disk; later runs memory-map that cache so batches are pulled straight from
+# the file without loading it all.
 
 import os
 import math
 import time
 import numpy as np
+import pandas as pd
 import torch
 
 from model import Config, GPT, enc, count_parameters
 
 CORPUS_PATH = "enron_mails.csv"
-TOKENS_PATH = "enron_tokens.bin"    # cached BPE token ids (uint16 - GPT-2's 50,257 ids fit in 16 bits)
+TOKENS_PATH = "enron_body_tokens.bin"   # cached BPE token ids (uint16 - GPT-2's 50,257 ids fit in 16 bits)
 CHECKPOINT_PATH = "checkpoints/ckpt.pt"
 
 # ---------------------------------------------------------------------------
@@ -46,27 +49,41 @@ log_interval = 10
 
 
 # ---------------------------------------------------------------------------
-# data: BPE-encode the corpus once, then memory-map the cached tokens
+# data: BPE-encode the message bodies once, then memory-map the cached tokens
 # ---------------------------------------------------------------------------
-def build_token_cache(corpus_path, tokens_path, chunk_chars=8 * 1024 * 1024):
-    # encode the corpus in chunks so we never hold all 1.3GB of text (or 460M python ints) in memory.
-    # each chunk is extended to the next newline so we don't split a word across two chunks,
-    # and the pieces of a chunk are encoded in parallel threads by tiktoken.
-    print(f"Encoding {corpus_path} with GPT-2 BPE (one-time, cached to {tokens_path})...")
+def build_token_cache(corpus_path, tokens_path, chunk_rows=50_000):
+    # read only the body column, in chunks of rows, so we never hold the whole 1.3GB CSV in memory.
+    # the bodies of each chunk are encoded in parallel threads by tiktoken.
+    print(f"Encoding message bodies from {corpus_path} with GPT-2 BPE (one-time, cached to {tokens_path})...")
     tmp_path = tokens_path + ".tmp"
-    total = 0
+    total_tokens = 0
+    total_messages = 0
+    seen = set()
     start = time.time()
-    with open(corpus_path, encoding="utf-8", errors="replace") as f, open(tmp_path, "wb") as out:
-        while chunk := f.read(chunk_chars):
-            chunk += f.readline()
-            pieces = chunk.splitlines(keepends=True)
-            ids = [t for piece in enc.encode_ordinary_batch(pieces, num_threads=os.cpu_count()) for t in piece]
+    with open(tmp_path, "wb") as out:
+        for chunk in pd.read_csv(corpus_path, usecols=["body"], dtype={"body": "string"}, chunksize=chunk_rows):
+            bodies = []
+            for body in chunk["body"].dropna():
+                # the bodies use windows line endings - normalize them so "\r\n" doesn't waste tokens
+                body = body.replace("\r\n", "\n").strip()
+                # the same message is stored in several folders (sent, sent_items, all_documents...),
+                # so over half the rows are duplicates. keep one copy so the model doesn't over-learn them.
+                key = hash(body)
+                if not body or key in seen:
+                    continue
+                seen.add(key)
+                bodies.append(body)
+
+            # each message ends with <|endoftext|> so the model learns where one email stops and the next begins
+            encoded = enc.encode_ordinary_batch(bodies, num_threads=os.cpu_count())
+            ids = [t for message in encoded for t in message + [enc.eot_token]]
             np.array(ids, dtype=np.uint16).tofile(out)
-            total += len(ids)
-            print(f"  {total:,} tokens ({time.time() - start:.0f}s)", end="\r")
+            total_tokens += len(ids)
+            total_messages += len(bodies)
+            print(f"  {total_messages:,} messages, {total_tokens:,} tokens ({time.time() - start:.0f}s)", end="\r")
     # only rename once finished, so an interrupted run doesn't leave a truncated cache behind
     os.replace(tmp_path, tokens_path)
-    print(f"\n  done: {total:,} tokens in {time.time() - start:.0f}s")
+    print(f"\n  done: {total_messages:,} unique messages, {total_tokens:,} tokens in {time.time() - start:.0f}s")
 
 
 def load_data(corpus_path, tokens_path, batch_size, block_size, device):
@@ -241,7 +258,7 @@ def train():
                   f"{dt * 1000:.0f}ms | {tokens_per_step / dt:,.0f} tok/s")
 
     print("\nSample from the trained model:")
-    print(generate(model, "Subject: ", max_new_tokens=200, device=device))
+    print(generate(model, "Please", max_new_tokens=200, device=device))
 
 
 if __name__ == "__main__":

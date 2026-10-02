@@ -86,14 +86,14 @@ class CausalSelfAttention(nn.Module):
         v = v.view(B, T, self.n_head, head_size).transpose(1, 2)
 
         y = torch.nn.functional.scaled_dot_product_attention(
-            q, k, v, 
-            # attn_mask=self.mask[:, :, :T, :T], 
-            # dropout_p=self.attn_dropout.p, 
+            q, k, v,
+            dropout_p=self.attn_dropout.p if self.training else 0.0,
             is_causal=True
         )
 
         y = y.transpose(1,2).contiguous().view(B, T, C)
-        return y
+        # glue the heads back together, then project back into the embedding space
+        return self.resid_dropout(self.c_proj(y))
     
         # attention scores: how well each query matches each key, scaled to keep softmax stable
         #att = (q @ k.transpose(-2, -1)) / math.sqrt(head_size)
@@ -175,8 +175,9 @@ class GPT(nn.Module):
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    # forward pass: token ids in -> logits (and optionally loss) out
-    def forward(self, idx, targets=None):
+    # embeddings -> transformer blocks -> final layer norm.
+    # shared by next-token prediction (forward) and classification (GPTClassifier)
+    def hidden(self, idx):
         B, T = idx.shape
         # assert that the sequence length does not exceed the block size
         assert T <= self.config.block_size, f"sequence length {T} exceeds block size {self.config.block_size}"
@@ -189,7 +190,11 @@ class GPT(nn.Module):
         for block in self.transformer.blocks:
             x = block(x)
 
-        x = self.transformer.ln_f(x)
+        return self.transformer.ln_f(x)       # (B, T, n_embd)
+
+    # forward pass: token ids in -> logits (and optionally loss) out
+    def forward(self, idx, targets=None):
+        x = self.hidden(idx)
         logits = self.lm_head(x)  # (B, T, vocab_size)
 
         loss = None
@@ -200,6 +205,49 @@ class GPT(nn.Module):
                 targets.view(-1)
             )
         return logits, loss
+
+
+# ---------------------------------------------------------------------------
+# spam classifier
+# ---------------------------------------------------------------------------
+# reuses the pretrained GPT body, but instead of predicting the next token at every position
+# it reads ONE vector per message and turns it into a score for each class (legitimate / spam).
+class GPTClassifier(nn.Module):
+    def __init__(self, config, num_classes=2):
+        super().__init__()
+        self.config = config
+        # the full GPT is kept so pretrained checkpoints load as-is. its lm_head is tied to wte,
+        # so it adds no extra parameters - it just goes unused here.
+        self.gpt = GPT(config)
+        self.dropout = nn.Dropout(config.dropout)
+        # classification head: embedding vector -> one score (logit) per class
+        self.head = nn.Linear(config.n_embd, num_classes)
+        nn.init.normal_(self.head.weight, mean=0.0, std=0.02)
+        nn.init.zeros_(self.head.bias)
+
+    # idx: (B, T) padded token ids, lengths: (B,) number of real tokens (including the final <|endoftext|>)
+    def forward(self, idx, lengths, labels=None, class_weights=None):
+        x = self.gpt.hidden(idx)  # (B, T, n_embd)
+        # attention is causal, so the last real token is the only position that has seen the whole message.
+        # its vector summarizes the message; padding after it never influences it.
+        last = x[torch.arange(x.size(0), device=x.device), lengths.long() - 1]  # (B, n_embd)
+        logits = self.head(self.dropout(last))  # (B, num_classes)
+
+        loss = None
+        if labels is not None:
+            # class_weights lets the rarer class (spam) count for more, so the model can't just predict "legitimate"
+            loss = F.cross_entropy(logits, labels, weight=class_weights)
+        return logits, loss
+
+    # build a classifier on top of a GPT checkpoint saved by train.py.
+    # the transformer weights come from the checkpoint; only the classification head starts random.
+    @classmethod
+    def from_pretrained(cls, checkpoint_path, num_classes=2, map_location="cpu"):
+        checkpoint = torch.load(checkpoint_path, map_location=map_location, weights_only=False)
+        config = Config(**checkpoint["config"])
+        model = cls(config, num_classes)
+        model.gpt.load_state_dict(checkpoint["model"])
+        return model
 
 # ---------------------------------------------------------------------------
 # parameter count
