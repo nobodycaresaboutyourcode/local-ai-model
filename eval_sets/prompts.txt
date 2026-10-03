@@ -1,0 +1,12 @@
+# prompts.txt
+# fixed prompts for eval_lm.py's sample generations. one prompt per line; write \n for a newline.
+# keep this list stable so samples from different checkpoints can be compared side by side -
+# add new prompts at the end rather than editing existing ones (each prompt's seed is its position).
+Vince,\n\nThanks for
+Please find attached
+The meeting has been moved to
+Hi team,\n\nAs you know,
+I wanted to follow up on our conversation about
+The price of natural gas
+Let me know if you have any questions.\n\n
+FYI -

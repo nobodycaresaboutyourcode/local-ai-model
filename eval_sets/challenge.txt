@@ -1,0 +1,664 @@
+# challenge.txt
+# hand-written emails for challenge.py. none of them come from Enron: they test whether the spam
+# classifier works on mail it has never seen anything like, in the shape real email arrives in.
+#
+# each case is a header, a line with three dashes, then the body:
+#
+#   === <unique id>
+#   label: legitimate | spam
+#   tags: <one or more tags, comma separated>
+#   subject: <subject line>
+#   ---
+#   <body, as many lines as you like>
+#
+# tags group the results. the ones used here:
+#   personal      - friends and family
+#   work          - everyday modern office mail
+#   transactional - receipts, shipping, password resets, bills: legitimate, but shaped a lot like phishing
+#   newsletter    - mail the reader signed up for
+#   spammy_words  - legitimate mail full of words spam loves ("free", "won", "click here", "$")
+#   format        - real-world formatting: HTML, reply chains, forwards, signatures, emoji, other languages
+#   classic_spam  - the 2000s spam the training data is full of
+#   phishing      - modern credential and payment scams
+#   obfuscated    - spam that disguises its words (V1agra, s p a c i n g)
+#   short         - very little text to go on
+#
+# names from a fixed list (Sarah, Mike, Jen, David, Tom, Maria, Alex, Priya) get swapped for other
+# names in the invariance tests, so use them when a message needs a name.
+
+=== personal-01
+label: legitimate
+tags: personal
+subject: dinner sunday?
+---
+Hey Sarah,
+
+Are you and Mike free for dinner Sunday? We're thinking 6:30 at our place. I'm making that lasagna you liked last time. Let me know if you can bring a salad or dessert.
+
+Jen
+
+=== personal-02
+label: legitimate
+tags: personal
+subject: Mom's birthday
+---
+Hi David,
+
+Just a reminder that Mom's birthday is on the 14th. I ordered flowers from both of us, so you owe me $35 whenever. Can you call her that morning? She's been asking about you.
+
+Love,
+Maria
+
+=== personal-03
+label: legitimate
+tags: personal
+subject: photos from the lake
+---
+Tom, here are the photos from the weekend at the lake. The one of the dog jumping off the dock is my favorite. Uploaded the rest to the shared album. Thanks again for having us!
+
+=== personal-04
+label: legitimate
+tags: personal, short
+subject: running late
+---
+Stuck in traffic, be there in 15. Order me a coffee?
+
+=== personal-05
+label: legitimate
+tags: personal
+subject: Re: soccer carpool
+---
+Works for me. I can drive Tuesdays and Thursdays, you take Monday and Wednesday? Practice ends at 5:45 this season, not 5:30.
+
+Alex
+
+=== personal-06
+label: legitimate
+tags: personal, spammy_words
+subject: you won't believe this
+---
+Sarah!! I actually won the raffle at the school fundraiser. A whole year of free pizza. I've never won anything in my life. Pizza night at my house every Friday, you're all invited.
+
+=== personal-07
+label: legitimate
+tags: personal
+subject: moving help
+---
+Hi Priya,
+
+We finally closed on the house! Moving day is Saturday the 21st. Any chance you could help for a few hours in the morning? I'll have donuts and coffee, and pizza and beer after. No worries if you can't.
+
+Thanks,
+David
+
+=== personal-08
+label: legitimate
+tags: personal, format
+subject: Fwd: recipe
+---
+Thought you'd want this one.
+
+---------- Forwarded message ---------
+From: Maria Lopez
+Date: Sun, Mar 3
+Subject: recipe
+To: Jen
+
+Here's the chili recipe. 2 lbs ground beef, 2 cans kidney beans, 1 can crushed tomatoes, 1 onion, 3 cloves garlic, 2 tbsp chili powder, 1 tsp cumin. Simmer at least two hours. Better the next day.
+
+=== work-01
+label: legitimate
+tags: work
+subject: Q3 planning meeting moved to Thursday
+---
+Hi team,
+
+The Q3 planning meeting is moving from Wednesday to Thursday at 10am, same room. Please bring your draft roadmap and any headcount requests. If Thursday doesn't work, let me know by end of day.
+
+Thanks,
+Sarah
+
+=== work-02
+label: legitimate
+tags: work
+subject: PR #482 ready for review
+---
+Hey Mike,
+
+The pagination fix is ready for review. I added tests for the empty page case and the off-by-one when the last page is full. CI is green. Would appreciate a look before Friday so it makes the release.
+
+Priya
+
+=== work-03
+label: legitimate
+tags: work
+subject: notes from today's standup
+---
+Notes from standup:
+
+- Alex: finishing the billing migration, blocked on access to the staging database
+- Jen: on-call this week, two pages overnight, both resolved
+- Tom: starting the onboarding redesign, first mockups Wednesday
+
+Action item: David to get Alex staging access today.
+
+=== work-04
+label: legitimate
+tags: work
+subject: offsite agenda
+---
+Hi all,
+
+Attached is the draft agenda for next month's offsite. Day one is strategy and customer feedback, day two is team workshops. Please review and send me any topics you'd like added by the 15th.
+
+Maria
+
+=== work-05
+label: legitimate
+tags: work, format
+subject: Re: Re: vendor contract
+---
+Sounds good, I'll send the redlines to legal tomorrow.
+
+On Tue, Apr 9, Tom Becker wrote:
+> Can we push back on the auto-renewal clause? Two years is too long.
+> Everything else looks fine to me.
+>
+> On Mon, Apr 8, Jen Park wrote:
+>> Here's the vendor contract for review. Main changes are pricing
+>> and the support SLA. Need sign-off by Friday.
+
+=== work-06
+label: legitimate
+tags: work
+subject: welcome to the team!
+---
+Hi Alex,
+
+Welcome aboard! Your laptop should arrive Monday. Your first week is mostly onboarding sessions, and Priya will be your buddy for the first month. Lunch is on us Wednesday so you can meet everyone.
+
+See you soon,
+David
+
+=== work-07
+label: legitimate
+tags: work
+subject: out of office
+---
+I am out of the office until Monday, March 18 with limited access to email. For urgent issues please contact Sarah Kim. I will reply when I return.
+
+=== work-08
+label: legitimate
+tags: work, spammy_words
+subject: we won the Henderson account!
+---
+Team, we did it. Henderson signed this morning, a three year deal worth $2.4 million. Huge thanks to everyone who worked late on the proposal. Drinks are on me Friday at 5.
+
+Mike
+
+=== work-09
+label: legitimate
+tags: work, spammy_words
+subject: FREE lunch Friday - click here to RSVP
+---
+Hi everyone,
+
+Free lunch in the main conference room this Friday at noon to celebrate the launch! Click here to RSVP so we order enough food: https://forms.example.com/launch-lunch
+
+Vegetarian and gluten free options available.
+
+=== work-10
+label: legitimate
+tags: work, spammy_words
+subject: Open enrollment ends Friday - act now
+---
+Reminder: benefits open enrollment closes this Friday at 11:59pm. If you don't make your selections, your current coverage carries over but your FSA will reset to $0. Log in to the HR portal to review your options. Limited time, don't miss out!
+
+People Team
+
+=== work-11
+label: legitimate
+tags: work, format
+subject: Budget approval
+---
+<html><body><p>Hi Tom,</p><p>Your budget request for <b>$12,500</b> for the new monitoring tools has been <b>approved</b>. Finance will issue the PO this week.</p><p>Best,<br>Maria Chen<br>Finance Director</p></body></html>
+
+=== work-12
+label: legitimate
+tags: work, format
+subject: Re: data export question
+---
+Hi Jen,
+
+Yes, the export includes all fields except the internal notes. You can run it from Settings > Data > Export.
+
+Best regards,
+
+David Okafor
+Senior Support Engineer | Northwind Software
+Phone: (555) 013-8842
+www.northwind.example.com
+
+CONFIDENTIALITY NOTICE: This message and any attachments are intended only for the named recipient and may contain confidential information. If you received this in error, please notify the sender and delete it.
+
+=== transactional-01
+label: legitimate
+tags: transactional
+subject: Your order has shipped
+---
+Hi Sarah,
+
+Good news! Your order #4471-2290 has shipped and is on its way. Estimated delivery: Thursday, June 6.
+
+Track your package: https://shop.example.com/orders/4471-2290
+
+Items: 1 x Ceramic pour-over coffee maker, 2 x Paper filters (100 ct)
+
+Thanks for shopping with us!
+
+=== transactional-02
+label: legitimate
+tags: transactional
+subject: Reset your password
+---
+Hi Mike,
+
+We received a request to reset the password for your account. Click the link below to choose a new password. This link expires in 30 minutes.
+
+https://accounts.example.com/reset?token=8f2a91
+
+If you didn't request this, you can safely ignore this email. Your password won't change.
+
+=== transactional-03
+label: legitimate
+tags: transactional, short
+subject: Your verification code
+---
+Your verification code is 482913. It expires in 10 minutes. Don't share this code with anyone.
+
+=== transactional-04
+label: legitimate
+tags: transactional
+subject: Your receipt from Corner Bakery
+---
+Thanks for your order!
+
+Date: May 12, 8:14 AM
+1 x Large latte $5.25
+1 x Blueberry muffin $3.50
+Tax $0.79
+Total $9.54
+
+Paid with Visa ending in 4412.
+
+=== transactional-05
+label: legitimate
+tags: transactional
+subject: Appointment reminder: Dr. Patel, Tuesday 9:00 AM
+---
+Hi Jen,
+
+This is a reminder of your appointment with Dr. Patel on Tuesday, April 23 at 9:00 AM at Riverside Family Medicine. Please arrive 10 minutes early and bring your insurance card. Reply C to confirm or call (555) 010-3321 to reschedule.
+
+=== transactional-06
+label: legitimate
+tags: transactional
+subject: Your statement is ready
+---
+Hi David,
+
+Your April statement for checking account ending in 0921 is now available. Log in to online banking to view it. We will never ask for your password or PIN by email.
+
+=== transactional-07
+label: legitimate
+tags: transactional
+subject: Invoice #1093 from Bright Lawn Care
+---
+Hi Tom,
+
+Here is your invoice for May lawn service (4 visits). Amount due: $180.00, due by June 15. You can pay online or mail a check to the address on the invoice. Thanks for your business!
+
+=== transactional-08
+label: legitimate
+tags: transactional
+subject: Your flight to Denver is tomorrow
+---
+Hi Maria,
+
+Check-in is now open for your flight tomorrow.
+
+Flight 1182, Chicago (ORD) to Denver (DEN)
+Departs 7:45 AM, Gate assigned at check-in
+Confirmation: QK7P2M
+
+Check in now to choose your seat and get your boarding pass.
+
+=== transactional-09
+label: legitimate
+tags: transactional, spammy_words
+subject: Congratulations! Your refund has been processed
+---
+Hi Alex,
+
+Your return has been received and your refund of $64.99 has been processed to your original payment method. It may take 3-5 business days to appear on your statement.
+
+=== transactional-10
+label: legitimate
+tags: transactional
+subject: New sign-in to your account
+---
+Hi Priya,
+
+We noticed a new sign-in to your account from Chrome on Mac in Portland, OR. If this was you, there's nothing you need to do. If not, go to your account settings and change your password.
+
+=== newsletter-01
+label: legitimate
+tags: newsletter
+subject: This week in Python: 3.13 released, new packaging guide
+---
+Hi there,
+
+Here's what happened in the Python world this week:
+
+- Python 3.13 is out, with an experimental free-threaded build and a better interactive shell
+- The packaging guide has a new section on pyproject.toml
+- Five talks from PyCon worth watching this weekend
+
+You're receiving this because you subscribed at newsletter.example.com. Unsubscribe anytime.
+
+=== newsletter-02
+label: legitimate
+tags: newsletter
+subject: Riverside Library: June events
+---
+Summer reading kicks off June 1! Kids who read 10 books get a free book to keep. Also this month: a beginner's watercolor class on Tuesdays, the used book sale on the 22nd, and extended weekend hours.
+
+=== newsletter-03
+label: legitimate
+tags: newsletter, spammy_words
+subject: Members save 20% this weekend
+---
+Hi Jen,
+
+As a co-op member, you save 20% on all bulk foods this weekend only. Plus, free samples from local farms on Saturday from 10 to 2. See you at the store!
+
+Greenfield Food Co-op
+
+=== newsletter-04
+label: legitimate
+tags: newsletter
+subject: Neighborhood association: road work on Elm St
+---
+Neighbors,
+
+The city will be repaving Elm Street from 3rd to 7th Avenue starting Monday. Expect lane closures from 7am to 5pm for about two weeks. Street parking on Elm will not be available during this time. The next association meeting is the 18th at the community center.
+
+=== newsletter-05
+label: legitimate
+tags: newsletter, format
+subject: Your weekly running summary 🏃
+---
+Great week, Mike! 🎉
+
+You ran 4 times this week for a total of 18.2 miles. That's 3 miles more than last week. Your longest run was 7.1 miles on Sunday. Keep it up! 💪
+
+=== format-01
+label: legitimate
+tags: format, personal
+subject: Re: hiking trip
+---
+Count me in! 😀 I'll bring the tent.
+
+Sent from my iPhone
+
+> On Jun 2, at 8:14 PM, Tom wrote:
+>
+> Who's in for the hiking trip on the 15th? Thinking we leave Friday night.
+
+=== format-02
+label: legitimate
+tags: format, personal
+subject: cena el sábado
+---
+Hola Maria,
+
+¿Quieres venir a cenar el sábado? Vamos a hacer paella y vienen también los vecinos. Trae a los niños si quieres. Avísame antes del jueves.
+
+Un abrazo,
+Sarah
+
+=== format-03
+label: legitimate
+tags: format, work
+subject: URGENT: production is down
+---
+PRODUCTION API IS RETURNING 500s SINCE 2:14 PM. ALL HANDS ON THE INCIDENT CHANNEL NOW. ROLLBACK IN PROGRESS. DAVID IS INCIDENT LEAD.
+
+=== format-04
+label: legitimate
+tags: format, short
+subject:
+---
+ok sounds good
+
+=== classic-01
+label: spam
+tags: classic_spam
+subject: Lose 30 pounds in 30 days!!!
+---
+Doctors HATE this one simple trick! Our all natural formula melts fat while you sleep. No diet, no exercise. Order today and get a second bottle FREE. Limited supply. Satisfaction guaranteed or your money back!
+
+=== classic-02
+label: spam
+tags: classic_spam
+subject: URGENT BUSINESS PROPOSAL
+---
+Dear Friend,
+
+I am Dr. James Okoro, a director at the Central Bank. I have in my possession the sum of $25,500,000 USD belonging to a deceased foreign client. I seek your assistance to transfer this fund to your account. You will receive 30% for your cooperation. Please reply with your full name, bank details and phone number. This transaction is 100% risk free.
+
+=== classic-03
+label: spam
+tags: classic_spam
+subject: You are a WINNER
+---
+CONGRATULATIONS!!! Your email address has been selected in our international lottery draw. You have won $1,000,000. To claim your prize send your name, address and a processing fee of $99 to our claims agent. Act now, unclaimed prizes are returned after 7 days.
+
+=== classic-04
+label: spam
+tags: classic_spam
+subject: cheap meds online - no prescription needed
+---
+Get the medications you need at up to 80% off pharmacy prices. No prescription required. Discreet shipping worldwide. Viagra, Cialis, Xanax, Valium and more. Order now at our secure online pharmacy.
+
+=== classic-05
+label: spam
+tags: classic_spam
+subject: Hot stock alert: GRWX about to explode
+---
+This tiny company just signed a deal that will send its stock through the roof. Insiders are buying now. GRWX is trading at $0.12 and analysts say $2.00 is coming within weeks. Don't miss the next big winner. Buy before the news breaks!
+
+=== classic-06
+label: spam
+tags: classic_spam
+subject: Rolex replica watches - 90% off
+---
+Luxury replica watches that look just like the real thing. Rolex, Omega, Cartier, Breitling. Swiss quality movement, perfect detail. Prices from $129. Free shipping on orders over $200. Visit our online store today.
+
+=== classic-07
+label: spam
+tags: classic_spam
+subject: refinance now - rates have never been lower
+---
+Homeowners! Lower your mortgage payment by hundreds every month. Rates as low as 2.9%. Bad credit OK. No obligation, no fees. Get your free quote in 60 seconds. Click here to get started. To be removed from our mailing list, reply with REMOVE.
+
+=== classic-08
+label: spam
+tags: classic_spam
+subject: hot singles in your area
+---
+Lonely tonight? Thousands of local singles are waiting to meet you. Join free today and start chatting in minutes. 100% discreet. Your perfect match is just one click away.
+
+=== phishing-01
+label: spam
+tags: phishing
+subject: Action required: your account has been suspended
+---
+Dear Customer,
+
+We detected unusual activity on your account and have temporarily suspended it for your protection. To restore access, verify your identity within 24 hours: http://secure-account-verify.example.net/login
+
+If you do not verify, your account will be permanently closed.
+
+Security Team
+
+=== phishing-02
+label: spam
+tags: phishing
+subject: Your package could not be delivered
+---
+We attempted to deliver your package today but no one was available. A redelivery fee of $1.99 is required. Please confirm your address and payment details here to schedule a new delivery: http://parcel-redelivery.example.net
+
+Your package will be returned to the sender after 48 hours.
+
+=== phishing-03
+label: spam
+tags: phishing
+subject: Password expiry notice
+---
+Your Microsoft 365 password expires today. To keep using your current password, click below and sign in to confirm. Failure to do so will result in loss of access to your mailbox.
+
+Keep My Password: http://office365-portal.example.net/keep
+
+IT Help Desk
+
+=== phishing-04
+label: spam
+tags: phishing
+subject: Invoice INV-20931 overdue
+---
+Hello,
+
+Please find attached the overdue invoice for services rendered. Payment of $3,480.00 is now 30 days late. Open the attached document to view and pay immediately to avoid collection fees.
+
+Accounts Receivable
+
+=== phishing-05
+label: spam
+tags: phishing
+subject: quick favor
+---
+Hi Jen,
+
+Are you at your desk? I'm in meetings all day and need a quick favor. I need you to buy 5 Apple gift cards at $200 each for a client appreciation gift. Scratch off the backs and email me photos of the codes. I'll reimburse you today. Please keep this between us for now.
+
+Mike
+Sent from my iPhone
+
+=== phishing-06
+label: spam
+tags: phishing
+subject: Your payment was declined
+---
+Hi,
+
+We were unable to process your payment for your streaming subscription. Your membership will be cancelled unless you update your billing information within 24 hours.
+
+Update payment: http://billing-update.example.net
+
+=== phishing-07
+label: spam
+tags: phishing
+subject: Tax refund notification
+---
+After the last annual calculation of your fiscal activity, we have determined that you are eligible to receive a tax refund of $842.50. Please submit the tax refund request and allow us 3-5 business days to process it. Click here to complete the form with your banking details.
+
+=== phishing-08
+label: spam
+tags: phishing
+subject: You have a document to review and sign
+---
+David Lee sent you a document to review and sign.
+
+REVIEW DOCUMENT: http://docs-esign.example.net/view?id=9921
+
+Please sign in with your email password to access the secure document. This link will expire in 24 hours.
+
+=== phishing-09
+label: spam
+tags: phishing
+subject: Bitcoin investment opportunity - 300% returns
+---
+Our AI trading platform has delivered 300% returns to investors this year. Start with as little as $250 and watch your money grow automatically. Withdraw anytime. Spots are limited. Join thousands of happy investors today!
+
+=== phishing-10
+label: spam
+tags: phishing, format
+subject: Security alert
+---
+<html><body><div style="font-family:Arial"><h2>Unusual sign-in activity</h2><p>We detected something unusual about a recent sign-in to your account. Someone may have accessed your account from an unknown device.</p><p><a href="http://account-security-check.example.net">Review recent activity</a></p><p>If you don't review this activity, your account will be locked.</p></div></body></html>
+
+=== obfuscated-01
+label: spam
+tags: obfuscated
+subject: V1agra and C1al1s - b3st pr1ces
+---
+G3t V1agra, C1al1s and L3vitra at the l0west pr1ces on the w3b. N0 pr3scr1pt10n n33ded. D1screet sh1pp1ng. 0rder n0w.
+
+=== obfuscated-02
+label: spam
+tags: obfuscated
+subject: f r e e   m o n e y
+---
+c l a i m   y o u r   $ 5 0 0   c a s h   r e w a r d   n o w .   l i m i t e d   t i m e   o f f e r .   c l i c k   h e r e .
+
+=== obfuscated-03
+label: spam
+tags: obfuscated
+subject: Re: your order
+---
+Hey,
+
+Just following up on your order. Our m.e.d.s are 100% gen.uine and sh.ip to your door. Ph.armacy pr.ices sl.ashed. Re.ply to or.der.
+
+=== obfuscated-04
+label: spam
+tags: obfuscated
+subject: a1rline m1les expir1ng
+---
+Your fr3quent flyer m1les are ab0ut to exp1re! Cl41m your FR33 r0und tr1p t1ckets bef0re m1dn1ght. Ent3r your l0g1n and cr3d1t c4rd to ver1fy.
+
+=== obfuscated-05
+label: spam
+tags: obfuscated
+subject: ʏᴏᴜ ʜᴀᴠᴇ ᴡᴏɴ
+---
+Cоngrаtulаtiоns! Yоu hаvе bееn sеlесtеd tо rесеivе а $1,000 Аmаzоn gift саrd. Сliсk hеrе tо сlаim bеfоrе it ехpirеs.
+
+=== short-01
+label: spam
+tags: short
+subject: hi
+---
+check this out http://bit.example.net/x7Gq2
+
+=== short-02
+label: spam
+tags: short, phishing
+subject: are you available?
+---
+Are you available? I need you to do something for me urgently. Reply asap.
+
+=== short-03
+label: spam
+tags: short
+subject: re:
+---
+you've been selected. claim now: http://prize.example.net
+
+=== short-04
+label: spam
+tags: short, obfuscated
+subject: $$$
+---
+$$$ M@KE MONEY FAST $$$ work from home!!!
