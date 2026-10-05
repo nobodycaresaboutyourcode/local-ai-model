@@ -1,6 +1,10 @@
 # tokenizer.py
+# exercise 2 - word-based tokenization
 # borrowed heavily from Angelos Perivolaropoulos (https://github.com/angelos-p/llm-from-scratch)
+# @authors: nobodycaresdude with help from Claude Opus 5.5
+
 # this example uses GPT2 encoding to tokenize word pairs instead of characters
+# tiktoken provides the GPT2 encoding for tokenizing text
 import tiktoken
 enc = tiktoken.get_encoding("gpt2")
 
