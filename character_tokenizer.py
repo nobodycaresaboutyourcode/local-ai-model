@@ -1,7 +1,11 @@
 # character_tokenizer.py
+# exercise 2 - character-level tokenization
 # borrowed heavily from Angelos Perivolaropoulos (https://github.com/angelos-p/llm-from-scratch)
-# this is just to explain tokenization in a simple way
+# @authors: nobodycaresdude with help from Claude Opus 5.5
 
+# this module performs character level tokenization
+# on a corpus of data based on the ENRON email dataset
+# each unique character in the dataset becomes its own token
 text = open("enron_mails.csv").read()
 chars = sorted(set(text))
 
